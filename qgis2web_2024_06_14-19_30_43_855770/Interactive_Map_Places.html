@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/filter.css">
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet"><!--Import Lato font-family -->
+
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>Interactive Map: Places</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/Schools_1.js"></script>
+        <script>
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        })
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var title = new L.Control({'position':'topright'});
+        title.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info');
+            this.update();
+            return this._div;
+        };
+        title.update = function () {
+            this._div.innerHTML = '<h2>Interactive Map: Places</h2>';
+        };
+        title.addTo(map);
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+        }
+        map.createPane('pane_Positron_0');
+        map.getPane('pane_Positron_0').style.zIndex = 400;
+        var layer_Positron_0 = L.tileLayer('https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+            pane: 'pane_Positron_0',
+            opacity: 1.0,
+            attribution: '<a href="https://cartodb.com/basemaps/">Map tiles by CartoDB, under CC BY 3.0. Data by OpenStreetMap, under ODbL.</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_Positron_0;
+        map.addLayer(layer_Positron_0);
+        function pop_Schools_1(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">School Name:</th>\
+                        <td class="visible-with-data" id="School Name">' + (feature.properties['School Name'] !== null ? autolinker.link(feature.properties['School Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Construction Year:</th>\
+                        <td class="visible-with-data" id="Construction Year">' + (feature.properties['Construction Year'] !== null ? autolinker.link(feature.properties['Construction Year'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">School Type:</th>\
+                        <td class="visible-with-data" id="SchoolType">' + (feature.properties['SchoolType'] !== null ? autolinker.link(feature.properties['SchoolType'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Building Condition:</th>\
+                        <td class="visible-with-data" id="FCI Group">' + (feature.properties['FCI Group'] !== null ? autolinker.link(feature.properties['FCI Group'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Utilization:</th>\
+                        <td class="visible-with-data" id="Utilization Group">' + (feature.properties['Utilization Group'] !== null ? autolinker.link(feature.properties['Utilization Group'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Specialty Rooms - Right Mix:</th>\
+                        <td class="visible-with-data" id="Specialty Rooms - Right Mix">' + (feature.properties['Specialty Rooms - Right Mix'] !== null ? autolinker.link(feature.properties['Specialty Rooms - Right Mix'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">% Air Conditioned:</th>\
+                        <td class="visible-with-data" id="Space with AC">' + (feature.properties['Space with AC'] !== null ? autolinker.link(feature.properties['Space with AC'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Schools_1_0(feature) {
+            switch(String(feature.properties['Grouped School Levels'])) {
+                case 'Elementary School':
+                    return {
+                pane: 'pane_Schools_1',
+                radius: 12.0,
+                opacity: 1,
+                color: 'rgba(255,255,255,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 3.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,83,13,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'K-8':
+                    return {
+                pane: 'pane_Schools_1',
+                radius: 12.0,
+                opacity: 1,
+                color: 'rgba(255,255,255,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 3.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,51,160,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Middle School':
+                    return {
+                pane: 'pane_Schools_1',
+                radius: 12.0,
+                opacity: 1,
+                color: 'rgba(255,255,255,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 3.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,133,125,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'High School':
+                    return {
+                pane: 'pane_Schools_1',
+                radius: 12.0,
+                opacity: 1,
+                color: 'rgba(255,255,255,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 3.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,199,44,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Schools_1');
+        map.getPane('pane_Schools_1').style.zIndex = 401;
+        map.getPane('pane_Schools_1').style['mix-blend-mode'] = 'normal';
+        var layer_Schools_1 = new L.geoJson(json_Schools_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Schools_1',
+            layerName: 'layer_Schools_1',
+            pane: 'pane_Schools_1',
+            onEachFeature: pop_Schools_1,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Schools_1_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Schools_1);
+        map.addLayer(layer_Schools_1);
+        var baseMaps = {};
+        var overlaysTree = [
+            {label: 'Schools<br /><table><tr><td style="text-align: center;"><img src="legend/Schools_1_ElementarySchool0.png" /></td><td>Elementary School</td></tr><tr><td style="text-align: center;"><img src="legend/Schools_1_K8School1.png" /></td><td>K-8 School</td></tr><tr><td style="text-align: center;"><img src="legend/Schools_1_MiddleSchool2.png" /></td><td>Middle School</td></tr><tr><td style="text-align: center;"><img src="legend/Schools_1_HighSchool3.png" /></td><td>High School</td></tr></table>', layer: layer_Schools_1},
+            {label: "Positron", layer: layer_Positron_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+        map.addControl(new L.Control.Search({
+            layer: layer_Schools_1,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'School Name'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"Grouped School Levels": "str","SchoolType": "str","Utilization Group": "str","FCI Group": "str","Specialty Rooms - Right Mix": "str","Space with AC": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_GroupedSchoolLevels = document.createElement('div');
+            div_GroupedSchoolLevels.id = "div_GroupedSchoolLevels";
+            div_GroupedSchoolLevels.className= "filterselect";
+            document.getElementById("menu").appendChild(div_GroupedSchoolLevels);
+            sel_GroupedSchoolLevels = document.createElement('select');
+            sel_GroupedSchoolLevels.multiple = true;
+            sel_GroupedSchoolLevels.size = 4;
+            sel_GroupedSchoolLevels.id = "sel_GroupedSchoolLevels";
+            var GroupedSchoolLevels_options_str = "";
+            sel_GroupedSchoolLevels.onchange = function(){filterFunc()};
+            GroupedSchoolLevels_options_str  += '<option value="Elementary School">Elementary School</option>';
+            GroupedSchoolLevels_options_str  += '<option value="K-8">K-8</option>';
+            GroupedSchoolLevels_options_str  += '<option value="Middle School">Middle School</option>';
+            GroupedSchoolLevels_options_str  += '<option value="High School">High School</option>';
+            sel_GroupedSchoolLevels.innerHTML = GroupedSchoolLevels_options_str;
+            div_GroupedSchoolLevels.appendChild(sel_GroupedSchoolLevels);
+            var lab_GroupedSchoolLevels = document.createElement('div');
+            lab_GroupedSchoolLevels.innerHTML = 'School Grade';
+            lab_GroupedSchoolLevels.className = 'filterlabel';
+            div_GroupedSchoolLevels.appendChild(lab_GroupedSchoolLevels);
+            var reset_GroupedSchoolLevels = document.createElement('div');
+            reset_GroupedSchoolLevels.innerHTML = 'clear filter';
+            reset_GroupedSchoolLevels.className = 'filterclear';
+            reset_GroupedSchoolLevels.onclick = function() {
+                var options = document.getElementById("sel_GroupedSchoolLevels").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_GroupedSchoolLevels.appendChild(reset_GroupedSchoolLevels);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_SchoolType = document.createElement('div');
+            div_SchoolType.id = "div_SchoolType";
+            div_SchoolType.className= "filterselect";
+            document.getElementById("menu").appendChild(div_SchoolType);
+            sel_SchoolType = document.createElement('select');
+            sel_SchoolType.multiple = true;
+            sel_SchoolType.size = 4;
+            sel_SchoolType.id = "sel_SchoolType";
+            var SchoolType_options_str = "";
+            sel_SchoolType.onchange = function(){filterFunc()};
+            SchoolType_options_str  += '<option value="Traditional">Traditional</option>';
+            SchoolType_options_str  += '<option value="Instrumentality">Instrumentality</option>';
+            SchoolType_options_str  += '<option value="Non-Instrumentality">Non-Instrumentality</option>';
+            SchoolType_options_str  += '<option value="Partnership">Partnership</option>';
+            sel_SchoolType.innerHTML = SchoolType_options_str;
+            div_SchoolType.appendChild(sel_SchoolType);
+            var lab_SchoolType = document.createElement('div');
+            lab_SchoolType.innerHTML = 'School Type';
+            lab_SchoolType.className = 'filterlabel';
+            div_SchoolType.appendChild(lab_SchoolType);
+            var reset_SchoolType = document.createElement('div');
+            reset_SchoolType.innerHTML = 'clear filter';
+            reset_SchoolType.className = 'filterclear';
+            reset_SchoolType.onclick = function() {
+                var options = document.getElementById("sel_SchoolType").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_SchoolType.appendChild(reset_SchoolType);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_UtilizationGroup = document.createElement('div');
+            div_UtilizationGroup.id = "div_UtilizationGroup";
+            div_UtilizationGroup.className= "filterselect";
+            document.getElementById("menu").appendChild(div_UtilizationGroup);
+            sel_UtilizationGroup = document.createElement('select');
+            sel_UtilizationGroup.multiple = true;
+            sel_UtilizationGroup.size = 5;
+            sel_UtilizationGroup.id = "sel_UtilizationGroup";
+            var UtilizationGroup_options_str = "";
+            sel_UtilizationGroup.onchange = function(){filterFunc()};
+            UtilizationGroup_options_str  += '<option value="High">High</option>';
+            UtilizationGroup_options_str  += '<option value="Good">Good</option>';
+            UtilizationGroup_options_str  += '<option value="Low">Low</option>';
+            UtilizationGroup_options_str  += '<option value="Very Low">Very Low</option>';
+            UtilizationGroup_options_str  += '<option value="No Data">No Data</option>';
+            sel_UtilizationGroup.innerHTML = UtilizationGroup_options_str;
+            div_UtilizationGroup.appendChild(sel_UtilizationGroup);
+            var lab_UtilizationGroup = document.createElement('div');
+            lab_UtilizationGroup.innerHTML = 'Utilization';
+            lab_UtilizationGroup.className = 'filterlabel';
+            div_UtilizationGroup.appendChild(lab_UtilizationGroup);
+            var reset_UtilizationGroup = document.createElement('div');
+            reset_UtilizationGroup.innerHTML = 'clear filter';
+            reset_UtilizationGroup.className = 'filterclear';
+            reset_UtilizationGroup.onclick = function() {
+                var options = document.getElementById("sel_UtilizationGroup").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_UtilizationGroup.appendChild(reset_UtilizationGroup);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_FCIGroup = document.createElement('div');
+            div_FCIGroup.id = "div_FCIGroup";
+            div_FCIGroup.className= "filterselect";
+            document.getElementById("menu").appendChild(div_FCIGroup);
+            sel_FCIGroup = document.createElement('select');
+            sel_FCIGroup.multiple = true;
+            sel_FCIGroup.size = 5;
+            sel_FCIGroup.id = "sel_FCIGroup";
+            var FCIGroup_options_str = "";
+            sel_FCIGroup.onchange = function(){filterFunc()};
+            FCIGroup_options_str  += '<option value="Optimal">Good</option>';
+            FCIGroup_options_str  += '<option value="Moderate">Fair</option>';
+            FCIGroup_options_str  += '<option value="Compromised">Poor</option>';
+            FCIGroup_options_str  += '<option value="Severely Compromised">Critical</option>';
+            FCIGroup_options_str  += '<option value="No Data">No Data</option>';
+            sel_FCIGroup.innerHTML = FCIGroup_options_str;
+            div_FCIGroup.appendChild(sel_FCIGroup);
+            var lab_FCIGroup = document.createElement('div');
+            lab_FCIGroup.innerHTML = 'FCI Group';
+            lab_FCIGroup.className = 'filterlabel';
+            div_FCIGroup.appendChild(lab_FCIGroup);
+            var reset_FCIGroup = document.createElement('div');
+            reset_FCIGroup.innerHTML = 'clear filter';
+            reset_FCIGroup.className = 'filterclear';
+            reset_FCIGroup.onclick = function() {
+                var options = document.getElementById("sel_FCIGroup").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_FCIGroup.appendChild(reset_FCIGroup);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_SpecialtyRoomsRightMix = document.createElement('div');
+            div_SpecialtyRoomsRightMix.id = "div_SpecialtyRoomsRightMix";
+            div_SpecialtyRoomsRightMix.className= "filterselect";
+            document.getElementById("menu").appendChild(div_SpecialtyRoomsRightMix);
+            sel_SpecialtyRoomsRightMix = document.createElement('select');
+            sel_SpecialtyRoomsRightMix.multiple = true;
+            sel_SpecialtyRoomsRightMix.size = 3;
+            sel_SpecialtyRoomsRightMix.id = "sel_SpecialtyRoomsRightMix";
+            var SpecialtyRoomsRightMix_options_str = "";
+            sel_SpecialtyRoomsRightMix.onchange = function(){filterFunc()};
+            SpecialtyRoomsRightMix_options_str  += '<option value="Yes">Yes</option>';
+            SpecialtyRoomsRightMix_options_str  += '<option value="No">No</option>';
+            SpecialtyRoomsRightMix_options_str  += '<option value="No Data">No Data</option>';
+            sel_SpecialtyRoomsRightMix.innerHTML = SpecialtyRoomsRightMix_options_str;
+            div_SpecialtyRoomsRightMix.appendChild(sel_SpecialtyRoomsRightMix);
+            var lab_SpecialtyRoomsRightMix = document.createElement('div');
+            lab_SpecialtyRoomsRightMix.innerHTML = 'Specialty Rooms - Right Mix';
+            lab_SpecialtyRoomsRightMix.className = 'filterlabel';
+            div_SpecialtyRoomsRightMix.appendChild(lab_SpecialtyRoomsRightMix);
+            var reset_SpecialtyRoomsRightMix = document.createElement('div');
+            reset_SpecialtyRoomsRightMix.innerHTML = 'clear filter';
+            reset_SpecialtyRoomsRightMix.className = 'filterclear';
+            reset_SpecialtyRoomsRightMix.onclick = function() {
+                var options = document.getElementById("sel_SpecialtyRoomsRightMix").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_SpecialtyRoomsRightMix.appendChild(reset_SpecialtyRoomsRightMix);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_SpacewithAC = document.createElement('div');
+            div_SpacewithAC.id = "div_SpacewithAC";
+            div_SpacewithAC.className= "filterselect";
+            document.getElementById("menu").appendChild(div_SpacewithAC);
+            sel_SpacewithAC = document.createElement('select');
+            sel_SpacewithAC.multiple = true;
+            sel_SpacewithAC.size = 5;
+            sel_SpacewithAC.id = "sel_SpacewithAC";
+            var SpacewithAC_options_str = "";
+            sel_SpacewithAC.onchange = function(){filterFunc()};
+            SpacewithAC_options_str  += '<option value="0-25%">0-25%</option>';
+            SpacewithAC_options_str  += '<option value="25-50%">25-50%</option>';
+            SpacewithAC_options_str  += '<option value="50-75%">50-75%</option>';
+            SpacewithAC_options_str  += '<option value="75-100%">75-100%</option>';
+            SpacewithAC_options_str  += '<option value="No Data">No Data</option>';
+            sel_SpacewithAC.innerHTML = SpacewithAC_options_str;
+            div_SpacewithAC.appendChild(sel_SpacewithAC);
+            var lab_SpacewithAC = document.createElement('div');
+            lab_SpacewithAC.innerHTML = '% Air Conditioned';
+            lab_SpacewithAC.className = 'filterlabel';
+            div_SpacewithAC.appendChild(lab_SpacewithAC);
+            var reset_SpacewithAC = document.createElement('div');
+            reset_SpacewithAC.innerHTML = 'clear filter';
+            reset_SpacewithAC.className = 'filterclear';
+            reset_SpacewithAC.onclick = function() {
+                var options = document.getElementById("sel_SpacewithAC").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_SpacewithAC.appendChild(reset_SpacewithAC);
+        </script>
+    </body>
+</html>
